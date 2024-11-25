@@ -6,86 +6,120 @@ import {
   rmSync,
   statSync,
 } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
 
 type CopyOptions = {
   readonly excludeDirs: readonly string[];
 };
 
-const copyFiles = (src: string, dest: string, options: CopyOptions): void => {
-  const files = readdirSync(src);
+type TemplateConfig = {
+  readonly templateDir: string;
+  readonly targetDir: string;
+  readonly tempDir: string | null;
+};
 
-  files.forEach((file) => {
-    if (options.excludeDirs.includes(file)) {
-      return;
+const getDirectoryContents = (dir: string): readonly string[] =>
+  readdirSync(dir);
+
+const shouldCopyFile = (file: string, options: CopyOptions): boolean =>
+  !options.excludeDirs.includes(file);
+
+const copyFile = (
+  srcPath: string,
+  destPath: string,
+  options: CopyOptions
+): void => {
+  if (statSync(srcPath).isDirectory()) {
+    mkdirSync(destPath, { recursive: true });
+    copyDirectoryContents(srcPath, destPath, options);
+  } else {
+    copyFileSync(srcPath, destPath);
+  }
+};
+
+const copyDirectoryContents = (
+  src: string,
+  dest: string,
+  options: CopyOptions
+): void => {
+  getDirectoryContents(src)
+    .filter((file) => shouldCopyFile(file, options))
+    .forEach((file) => {
+      const srcPath = join(src, file);
+      const destPath = join(dest, file);
+      copyFile(srcPath, destPath, options);
+    });
+};
+
+const getTemplateConfig = (isLocalTesting: boolean): TemplateConfig => {
+  if (isLocalTesting) {
+    const scriptDir = dirname(fileURLToPath(import.meta.url));
+    return {
+      templateDir: join(scriptDir, '../../typescript-starter'),
+      targetDir: process.cwd(),
+      tempDir: null,
+    };
+  }
+
+  const tempDir = join(process.cwd(), '.temp-starter');
+  return {
+    templateDir: join(
+      tempDir,
+      'node_modules/@budokans/typescript-react-starter'
+    ),
+    targetDir: process.cwd(),
+    tempDir,
+  };
+};
+
+const downloadTemplate = (tempDir: string): void => {
+  mkdirSync(tempDir, { recursive: true });
+  console.log('📦 Downloading template...');
+  execSync(
+    'pnpm add @budokans/typescript-react-starter --prefix .temp-starter',
+    {
+      stdio: 'inherit',
     }
+  );
+};
 
-    const srcPath = join(src, file);
-    const destPath = join(dest, file);
+const cleanup = (tempDir: string): void => {
+  rmSync(tempDir, { recursive: true, force: true });
+};
 
-    if (statSync(srcPath).isDirectory()) {
-      mkdirSync(destPath, { recursive: true });
-      copyFiles(srcPath, destPath, options);
-    } else {
-      copyFileSync(srcPath, destPath);
-    }
+const installDependencies = (): void => {
+  console.log('📥 Installing dependencies...');
+  execSync('pnpm install', { stdio: 'inherit' });
+};
+
+const copyTemplate = (config: TemplateConfig): void => {
+  console.log('📋 Copying template files...');
+  copyDirectoryContents(config.templateDir, config.targetDir, {
+    excludeDirs: ['node_modules', '.git', 'dist', '.temp-starter'],
   });
 };
 
 const init = async (): Promise<void> => {
-  const tempDir = join(process.cwd(), '.temp-starter');
+  const isLocalTesting = process.argv.includes('--local');
+  const config = getTemplateConfig(isLocalTesting);
 
   try {
-    // For local testing, use the local files
-    const isDev = process.env['NODE_ENV'] === 'development';
-    let templateDir: string;
-
-    if (isDev) {
-      // Use local files (adjust this path to point to your typescript-starter directory)
-      templateDir = join(__dirname, '../../typescript-react-starter');
-      console.log('Using local template files from:', templateDir);
-    } else {
-      // Create and clean temp directory
-      mkdirSync(tempDir, { recursive: true });
-
-      console.log('📦 Downloading template...');
-      execSync(
-        'pnpm add @budokans/typescript-react-starter --prefix .temp-starter',
-        {
-          stdio: 'inherit',
-        }
-      );
-
-      templateDir = join(
-        tempDir,
-        'node_modules/@budokans/typescript-react-starter'
-      );
+    if (config.tempDir) {
+      downloadTemplate(config.tempDir);
     }
 
-    const targetDir = process.cwd();
+    copyTemplate(config);
 
-    console.log('📋 Copying template files...');
-    copyFiles(templateDir, targetDir, {
-      excludeDirs: ['node_modules', '.git', 'dist', '.temp-starter'],
-    });
-
-    // Cleanup temp directory if it was created
-    if (!isDev && tempDir) {
-      rmSync(tempDir, { recursive: true, force: true });
+    if (config.tempDir) {
+      cleanup(config.tempDir);
     }
 
-    // Install dependencies
-    console.log('📥 Installing dependencies...');
-    execSync('pnpm install', { stdio: 'inherit' });
-
-    console.log('\n✨ TypeScript project initialized successfully!');
+    installDependencies();
+    console.log('\n✨ TypeScript React project initialised successfully!');
   } catch (error) {
-    // Cleanup on error
-    if (tempDir) {
-      rmSync(tempDir, { recursive: true, force: true });
+    if (config.tempDir) {
+      cleanup(config.tempDir);
     }
     console.error(
       'Error:',
