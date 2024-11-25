@@ -1,0 +1,26 @@
+# dependencies
+node_modules
+
+# next.js
+.next
+next-env.d.ts
+
+# vercel
+.vercel
+
+# misc
+.DS_Store
+*.pem
+
+# local env files
+.env*
+
+# typescript
+*.tsbuildinfo
+
+# tests
+coverage
+
+# logs
+*.log
+logs
