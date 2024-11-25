@@ -1,0 +1,20 @@
+{
+  "name": "@budokans/typescript-react-starter-cli",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "typescript-starter": "./dist/init.js"
+  },
+  "scripts": {
+    "build": "tsx build.ts",
+    "dev": "tsx build.ts --watch",
+    "test": "node dist/init.js --local",
+    "prepublishOnly": "pnpm build"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "esbuild": "^0.24.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.7.2"
+  }
+}

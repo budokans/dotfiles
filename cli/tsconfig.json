@@ -1,0 +1,35 @@
+{
+  "compilerOptions": {
+    // Type Checking
+    "strict": true,
+    "noFallthroughCasesInSwitch": true,
+    "exactOptionalPropertyTypes": true,
+    "noUnusedLocals": true,
+    "noUncheckedIndexedAccess": true,
+    "noUnusedParameters": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noPropertyAccessFromIndexSignature": true,
+
+    // JS Support
+    "allowJs": false,
+
+    // Modules
+    "target": "es2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+
+    // Interop
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "forceConsistentCasingInFileNames": true,
+
+    // Completeness
+    "skipLibCheck": true,
+
+    "outDir": "dist",
+    "rootDir": "."
+  },
+  "include": ["**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}
